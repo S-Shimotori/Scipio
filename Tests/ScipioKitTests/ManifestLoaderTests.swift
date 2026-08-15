@@ -4,8 +4,7 @@ import Testing
 
 struct ManifestLoaderTests {
     // A minimal dump-package payload whose top-level `traits` is the SwiftPM 6.1
-    // object form. PackageManifestKit models Manifest.traits as [String]?, so this
-    // fails to decode unless ManifestLoader strips the field first.
+    // object form, decoded via PackageManifestKit's TraitDescription model.
     private static let manifestWithObjectFormTraits = """
     {
       "name": "MyFramework",
@@ -21,7 +20,7 @@ struct ManifestLoaderTests {
     }
     """
 
-    // Same manifest without a `traits` key: exercises the strip no-op path.
+    // Same manifest without a `traits` key.
     private static let manifestWithoutTraits = """
     {
       "name": "MyFramework",
@@ -43,6 +42,10 @@ struct ManifestLoaderTests {
         let manifest = try await loader.loadManifest(for: URL(filePath: "/tmp/MyFramework"))
 
         #expect(manifest.name == "MyFramework")
+        let traits = try #require(manifest.traits)
+        #expect(traits.map(\.name) == ["default", "Foo"])
+        #expect(traits[0].enabledTraits == ["Foo"])
+        #expect(traits[1].description == "bar")
     }
 
     @Test
